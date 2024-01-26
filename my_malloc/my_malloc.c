@@ -1,20 +1,21 @@
 #include "my_malloc.h"
 
-#include <stdint.h>  // intptr_t
-#include <stdio.h>   // printf
-#include <stdlib.h>  // EXIT_SUCCESS
-#include <unistd.h>  // sbrk
+#include <stdint.h> // intptr_t
+#include <stdio.h>  // printf
+#include <stdlib.h> // EXIT_SUCCESS
+#include <unistd.h> // sbrk
 
 // set global head and tail pointers of doubly linked list
-block_t * head = NULL;
-block_t * tail = NULL;
+block_t *head = NULL;
+block_t *tail = NULL;
 
 unsigned long segment_free_space_size = 0;
 
-// When no free block region is larger than the required size, call sbrk() to create one
-// return a pointer to the start of the newly allocated memory, like sbrk()
-void * expandMemory(size_t size) {
-  block_t * newBlock = sbrk(size + sizeof(block_t));
+// When no free block region is larger than the required size, call sbrk() to
+// create one return a pointer to the start of the newly allocated memory, like
+// sbrk()
+void *expandMemory(size_t size) {
+  block_t *newBlock = sbrk(size + sizeof(block_t));
   // if sbrk() fails, return NULL (perhaps no sufficient memory on heap)
   if (newBlock == (void *)-1) {
     return NULL;
@@ -27,31 +28,32 @@ void * expandMemory(size_t size) {
   return newBlock;
 }
 
-// Given a free block region of size larger than we need, makr the first `size` byte to be occupied memory region, and update the free block region linked list with shrinked block
-void updateBlock(block_t * cur, size_t size) {
-  //segment_free_space_size -= size;
+// Given a free block region of size larger than we need, makr the first `size`
+// byte to be occupied memory region, and update the free block region linked
+// list with shrinked block
+void updateBlock(block_t *cur, size_t size) {
+  // segment_free_space_size -= size;
   // printf("cr: %p\n", cur);
-  block_t * prev_temp = cur->prev;
+  block_t *prev_temp = cur->prev;
   // printf("pt: %p\n", prev_temp);
-  block_t * next_temp = cur->next;
+  block_t *next_temp = cur->next;
   // printf("nt: %p\n", next_temp);
-  // if the fit is exactly the size we want, or the remaining region is not enough for a metadata header, then we delete that specific free block region
+  // if the fit is exactly the size we want, or the remaining region is not
+  // enough for a metadata header, then we delete that specific free block
+  // region
   // <==> node deletion in doubly linked list
   if (cur->size <= size + sizeof(block_t)) {
     // segment_free_space_size -= cur->size;
     if (cur == head && head == tail) {
       head = NULL;
       tail = NULL;
-    }
-    else if (cur == head) {
+    } else if (cur == head) {
       head = next_temp;
       next_temp->prev = NULL;
-    }
-    else if (cur == tail) {
+    } else if (cur == tail) {
       tail = prev_temp;
       prev_temp->next = NULL;
-    }
-    else {
+    } else {
       // printf("nt1: %p\n", next_temp);
       // printf("pt1: %p\n", prev_temp);
       prev_temp->next = next_temp;
@@ -62,10 +64,12 @@ void updateBlock(block_t * cur, size_t size) {
       // printf("nt3: %p\n", next_temp);
     }
   }
-  // else the fit has larger space and has spare bytes after allocating the memory, we split the free block region into two parts, and mark the occupied region
+  // else the fit has larger space and has spare bytes after allocating the
+  // memory, we split the free block region into two parts, and mark the
+  // occupied region
   else {
-    //cur = cur + sizeof(block_t) + size - sizeof(block_t);
-    block_t * updatedCur = (block_t *)((char *)cur + size + sizeof(block_t));
+    // cur = cur + sizeof(block_t) + size - sizeof(block_t);
+    block_t *updatedCur = (block_t *)((char *)cur + size + sizeof(block_t));
     // updatedCur->next = NULL;
     // updatedCur->prev = NULL;
     updatedCur->next = next_temp;
@@ -76,16 +80,13 @@ void updateBlock(block_t * cur, size_t size) {
     if (cur == head && head == tail) {
       head = updatedCur;
       tail = updatedCur;
-    }
-    else if (cur == head) {
+    } else if (cur == head) {
       head = updatedCur;
       next_temp->prev = updatedCur;
-    }
-    else if (cur == tail) {
+    } else if (cur == tail) {
       tail = updatedCur;
       prev_temp->next = updatedCur;
-    }
-    else {
+    } else {
       prev_temp->next = updatedCur;
       next_temp->prev = updatedCur;
     }
@@ -95,18 +96,19 @@ void updateBlock(block_t * cur, size_t size) {
 }
 
 // First Fit malloc
-void * ff_malloc(size_t size) {
+void *ff_malloc(size_t size) {
   // malloc man page: if size == 0, return NULL
   if (size == 0) {
     return NULL;
   }
   // traverse the free block region linked list...
-  block_t * cur = head;
+  block_t *cur = head;
   // ...until find the first block that is large enough
   while (cur != NULL && cur->size < size) {
     cur = cur->next;
   }
-  // if there is no such free block region, call sbrk() to create one, and return it
+  // if there is no such free block region, call sbrk() to create one, and
+  // return it
   if (cur == NULL) {
     return (char *)expandMemory(size) + sizeof(block_t);
   }
@@ -118,12 +120,12 @@ void * ff_malloc(size_t size) {
 }
 
 // Add a free block region into the doubly linked list
-void addBlock(block_t * ptr) {
+void addBlock(block_t *ptr) {
   // linked list initialization
   if (head == NULL && tail == NULL) {
     head = ptr;
     tail = ptr;
-    //fix
+    // fix
     if (ptr != NULL) {
       ptr->prev = NULL;
     }
@@ -134,20 +136,20 @@ void addBlock(block_t * ptr) {
   }
   // if the new free region is before the head of linked list
   if (ptr < head) {
-    block_t * head_temp = head;
+    block_t *head_temp = head;
     head = ptr;
-    //fix
-    if(ptr != NULL) {
+    // fix
+    if (ptr != NULL) {
       ptr->prev = NULL;
     }
-    if(ptr != NULL) {
+    if (ptr != NULL) {
       ptr->next = head_temp;
     }
     head_temp->prev = ptr;
   }
   // if the new free region is behind the tail of linked list
   else if (ptr > tail) {
-    block_t * tail_temp = tail;
+    block_t *tail_temp = tail;
     tail = ptr;
     ptr->next = NULL;
     ptr->prev = tail_temp;
@@ -156,16 +158,18 @@ void addBlock(block_t * ptr) {
   // if the new free region is for sure somewhere in between the linked list
   // <==> insert a node inside a doubly linked list
   else {
-    // find the former one of two consecutive free block regions in list, such that we are to insert a new free block region in between
-    block_t * next_temp = head->next;
-    block_t * prev_temp = head;
+    // find the former one of two consecutive free block regions in list, such
+    // that we are to insert a new free block region in between
+    block_t *next_temp = head->next;
+    block_t *prev_temp = head;
     // printf("nt154 begin: %p\n", next_temp);
     // printf("pt154 begin: %p\n", prev_temp);
     // printf("ntn154 begin: %p\n", next_temp->next);
-    while (next_temp != tail && next_temp < ptr && next_temp < tail && next_temp > head) {
+    while (next_temp != tail && next_temp < ptr && next_temp < tail &&
+           next_temp > head) {
       prev_temp = next_temp;
-      //fix
-      if(next_temp != NULL) {
+      // fix
+      if (next_temp != NULL) {
         next_temp = next_temp->next;
       }
       // printf("nt154 w: %p\n", next_temp);
@@ -181,7 +185,7 @@ void addBlock(block_t * ptr) {
 }
 
 // Merge two free block region in list if adjacent to each other
-void mergeBlocks(block_t * lhs, block_t * rhs) {
+void mergeBlocks(block_t *lhs, block_t *rhs) {
   // do nothing if the two blocks are not adjacent
   if (((char *)lhs + sizeof(block_t) + lhs->size) != ((char *)rhs)) {
     return;
@@ -201,18 +205,18 @@ void mergeBlocks(block_t * lhs, block_t * rhs) {
 }
 
 // Free helper function for both ff_free and bf_free
-void freeHelper(block_t * ptr) {
+void freeHelper(block_t *ptr) {
   if (ptr == NULL) {
     return;
   }
-  block_t * ptrInList = (block_t *)((char *)ptr - sizeof(block_t));
+  block_t *ptrInList = (block_t *)((char *)ptr - sizeof(block_t));
   // printf("ptrInList size : %lu\n", ptrInList->size);
   // ptrInList->size = ptr->size;
   // add a new free block region into the linked list
   addBlock(ptrInList);
   // merge possible free block regions
-  //fix
-  //if (ptrInList->next != NULL)
+  // fix
+  // if (ptrInList->next != NULL)
   if (ptrInList != NULL && ptrInList->next != NULL) {
     mergeBlocks(ptrInList, ptrInList->next);
   }
@@ -223,19 +227,17 @@ void freeHelper(block_t * ptr) {
 }
 
 // First Fit free
-void ff_free(void * ptr) {
-  freeHelper(ptr);
-}
+void ff_free(void *ptr) { freeHelper(ptr); }
 
 // Best Fit malloc
-void * bf_malloc(size_t size) {
+void *bf_malloc(size_t size) {
   // malloc man page: if size == 0, return NULL
   if (size == 0) {
     return NULL;
   }
   // traverse the whole free block region linked list to find the best fit
-  block_t * cur = head;
-  block_t * best_fit = NULL;
+  block_t *cur = head;
+  block_t *best_fit = NULL;
   while (cur != NULL) {
     if (cur->size == size) {
       updateBlock(cur, size);
@@ -246,15 +248,15 @@ void * bf_malloc(size_t size) {
         if (cur->size < best_fit->size) {
           best_fit = cur;
         }
-      }
-      else {
+      } else {
         best_fit = cur;
       }
     }
     cur = cur->next;
   }
 
-  // if there is no such free block region, call sbrk() to create one, and return it
+  // if there is no such free block region, call sbrk() to create one, and
+  // return it
   if (best_fit == NULL) {
     return (char *)expandMemory(size) + sizeof(block_t);
   }
@@ -266,18 +268,14 @@ void * bf_malloc(size_t size) {
 }
 
 // Best Fit free
-void bf_free(void * ptr) {
-  freeHelper(ptr);
-}
+void bf_free(void *ptr) { freeHelper(ptr); }
 
 // Get data segment size
-unsigned long get_data_segment_size() {
-  return segment_size;
-}
+unsigned long get_data_segment_size() { return segment_size; }
 
 // Get data segment free space size
 unsigned long get_data_segment_free_space_size() {
-  block_t * cur = head;
+  block_t *cur = head;
   while (cur != NULL) {
     segment_free_space_size += cur->size + sizeof(block_t);
     cur = cur->next;
