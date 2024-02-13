@@ -50,7 +50,11 @@ I run the tests with -ggdb3 debug flag on a 2-processor, 4 GB base memory, ubunt
 
 ### 2.1 Results 
 
-To be more accurate, I conducted the measurements 7 times for lock and no-lock respectively. The results are in Figure 1 and 2.
+To be more accurate, I conducted the measurements 7 times for lock and no-lock respectively. The results are in images below.
+<img width="909" alt="lock" src="https://github.com/ShiyuLiu2000/Duke-ECE-650/assets/131769951/743246c7-f0e1-4385-8d58-d46bf15a9624">
+The above image is the results for lock version.
+<img width="913" alt="no lock" src="https://github.com/ShiyuLiu2000/Duke-ECE-650/assets/131769951/e73732e2-83d5-46e3-bf6d-813125e085ab">
+The above image is the results for no-lock version.
 
 ### 2.2 Analysis
 
