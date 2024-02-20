@@ -75,7 +75,7 @@ void updateBlock(block_t *cur, size_t size) {
     updatedCur->next = next_temp;
     updatedCur->prev = prev_temp;
     updatedCur->size = cur->size - size - sizeof(block_t);
-    cur->size = size; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    cur->size = size; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // segment_free_space_size -= (size + sizeof(block_t));
     if (cur == head && head == tail) {
       head = updatedCur;
