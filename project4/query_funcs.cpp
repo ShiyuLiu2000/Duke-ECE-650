@@ -1,5 +1,7 @@
 #include "query_funcs.h"
 
+#include <numeric>  // std::accumulate
+
 void add_player(connection * C,
                 int team_id,
                 int jersey_num,
@@ -65,24 +67,77 @@ void add_color(connection * C, string name) {
  */
 // show all attributes of each player with average statistics that fall between the min and max (inclusive) for each enabled statistic
 void query1(connection * C,
-            int use_mpg,
+            int use_mpg,  // 0
             int min_mpg,
             int max_mpg,
-            int use_ppg,
+            int use_ppg,  // 1
             int min_ppg,
             int max_ppg,
-            int use_rpg,
+            int use_rpg,  // 2
             int min_rpg,
             int max_rpg,
-            int use_apg,
+            int use_apg,  // 3
             int min_apg,
             int max_apg,
-            int use_spg,
+            int use_spg,  // 4
             double min_spg,
             double max_spg,
-            int use_bpg,
+            int use_bpg,  // 5
             double min_bpg,
             double max_bpg) {
+  // used for read-only operations
+  nontransaction N(*C);
+  std::stringstream sql;
+  sql << "SELECT * FROM PLAYER";
+  int flags[6] = {use_mpg, use_ppg, use_rpg, use_apg, use_spg, use_bpg};
+  char choices[4] = {'M', 'P', 'R', 'A'};
+  int mins[4] = {min_mpg, min_ppg, min_rpg, min_apg};
+  int maxs[4] = {max_mpg, max_ppg, max_rpg, max_apg};
+  int sum = std::accumulate(std::begin(flags), std::end(flags), 0);
+  result r;
+  if (sum > 0) {
+    sql << " WHERE ";
+    for (int i = 0; i < 4; i++) {
+      if (flags[i] == 1) {
+        sql << "(" << choices[i] << "PG BETWEEN " << mins[i] << " AND " << maxs[i]
+            << ") AND ";
+      }
+    }
+    if (flags[4] == 1) {
+      sql << "(SPG BETWEEN " << min_spg << " AND " << max_spg << ") AND ";
+    }
+    if (flags[5] == 1) {
+      sql << "(BPG BETWEEN " << min_bpg << " AND " << max_bpg << ") AND ";
+    }
+    // erase the last AND
+    std::string temp = sql.str();
+    temp.erase(temp.end() - 5, temp.end());
+    std::stringstream newsql;
+    newsql << temp;
+    newsql << ";";
+    r = N.exec(newsql.str());
+  }
+  else {
+    sql << ";";
+    r = N.exec(sql.str());
+  }
+  // print results
+  std::cout
+      << "PLAYER_ID TEAM_ID UNIFORM_NUM FIRST_NAME LAST_NAME MPG PPG RPG APG SPG BPG"
+      << std::endl;
+  result::const_iterator it = r.begin();
+  while (it != r.end()) {
+    for (int i = 0; i < 11; i++) {
+      std::cout << it[i];
+      if (i < 10) {
+        std::cout << " ";
+      }
+      else {
+        std::cout << std::endl;
+      }
+    }
+    ++it;
+  }
 }
 
 // show the name of each team with the indicated uniform color
