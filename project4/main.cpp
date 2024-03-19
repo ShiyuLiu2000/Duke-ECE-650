@@ -21,7 +21,7 @@ void dropTables(connection * C) {
   result r = W.exec(sql.str());
   W.commit();
 
-  std::cout << "dropped tables" << std::endl;
+  //std::cout << "dropped tables" << std::endl;
 }
 
 // create tables with corresponding domain and constraints
@@ -80,7 +80,7 @@ void createTables(connection * C) {
   result r = W.exec(sql.str());
   W.commit();
 
-  std::cout << "created tables" << std::endl;
+  //std::cout << "created tables" << std::endl;
 }
 
 // parse player.txt and load into database
@@ -131,7 +131,7 @@ void parsePlayer(connection * C, std::istream & stream) {
     add_player(
         C, team_id, jersey_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg);
   }
-  std::cout << "parsed player.txt" << std::endl;
+  //std::cout << "parsed player.txt" << std::endl;
 }
 
 // parse team.txt and load into database
@@ -161,7 +161,7 @@ void parseTeam(connection * C, std::istream & stream) {
 
     add_team(C, name, state_id, color_id, wins, losses);
   }
-  std::cout << "parsed team.txt" << std::endl;
+  //std::cout << "parsed team.txt" << std::endl;
 }
 
 // parse state.txt and load into database
@@ -172,7 +172,7 @@ void parseState(connection * C, std::istream & stream) {
     line = line.substr(pos + 1);
     add_state(C, line);
   }
-  std::cout << "parsed state.txt" << std::endl;
+  //std::cout << "parsed state.txt" << std::endl;
 }
 
 // parse color.txt and load into database
@@ -183,7 +183,7 @@ void parseColor(connection * C, std::istream & stream) {
     line = line.substr(pos + 1);
     add_color(C, line);
   }
-  std::cout << "parsed color.txt" << std::endl;
+  //std::cout << "parsed color.txt" << std::endl;
 }
 
 int main(int argc, char * argv[]) {
@@ -195,7 +195,7 @@ int main(int argc, char * argv[]) {
     //Parameters: database name, user name, user password
     C = new connection("dbname=ACC_BBALL user=postgres password=passw0rd");
     if (C->is_open()) {
-      cout << "Opened database successfully: " << C->dbname() << endl;
+      //cout << "Opened database successfully: " << C->dbname() << endl;
     }
     else {
       cout << "Can't open database" << endl;

@@ -23,7 +23,7 @@ void add_player(connection * C,
       << ", " << spg << ", " << bpg << ");";
   result r = W.exec(sql.str());
   W.commit();
-  std::cout << "inserted into player" << std::endl;
+  //std::cout << "inserted into player" << std::endl;
 }
 
 void add_team(connection * C,
@@ -39,7 +39,7 @@ void add_team(connection * C,
       << losses << ");";
   result r = W.exec(sql.str());
   W.commit();
-  std::cout << "inserted into team" << std::endl;
+  //std::cout << "inserted into team" << std::endl;
 }
 
 void add_state(connection * C, string name) {
@@ -48,7 +48,7 @@ void add_state(connection * C, string name) {
   sql << "INSERT INTO STATE (NAME) VALUES (" << W.quote(name) << ");";
   result r = W.exec(sql.str());
   W.commit();
-  std::cout << "inserted into state" << std::endl;
+  //std::cout << "inserted into state" << std::endl;
 }
 
 void add_color(connection * C, string name) {
@@ -57,7 +57,7 @@ void add_color(connection * C, string name) {
   sql << "INSERT INTO COLOR (NAME) VALUES (" << W.quote(name) << ");";
   result r = W.exec(sql.str());
   W.commit();
-  std::cout << "inserted into color" << std::endl;
+  //std::cout << "inserted into color" << std::endl;
 }
 
 /*
@@ -142,16 +142,93 @@ void query1(connection * C,
 
 // show the name of each team with the indicated uniform color
 void query2(connection * C, string team_color) {
+  /*
+  select team.name
+  from team, color
+  where team.color_id = color.color_id and color.name = team)color;
+  */
+  nontransaction N(*C);
+  std::stringstream sql;
+  sql << "SELECT TEAM.NAME FROM TEAM, COLOR WHERE (TEAM.COLOR_ID = COLOR.COLOR_ID) AND "
+         "(COLOR.NAME = '"
+      << team_color << "');";
+  result r = N.exec(sql.str());
+  // print results
+  std::cout << "NAME" << std::endl;
+  result::const_iterator it = r.begin();
+  while (it != r.end()) {
+    std::cout << it[0] << std::endl;
+    ++it;
+  }
 }
 
 // show the first and last name of each player that plays for the indicated team, ordered from highest to lowest ppg (points per game)
 void query3(connection * C, string team_name) {
+  /*
+  select player.first_name, player.last_name
+  from player, team
+  where team.team_id = player.team_id and team.name = team_name
+  order by ppg desc
+  */
+  nontransaction N(*C);
+  std::stringstream sql;
+  sql << "SELECT PLAYER.FIRST_NAME, PLAYER.LAST_NAME FROM PLAYER, TEAM WHERE "
+         "(TEAM.TEAM_ID = PLAYER.TEAM_ID) AND (TEAM.NAME = '"
+      << team_name << "')"
+      << "ORDER BY PPG DESC;";
+  result r = N.exec(sql.str());
+  // print results
+  std::cout << "FIRST_NAME LAST_NAME" << std::endl;
+  result::const_iterator it = r.begin();
+  while (it != r.end()) {
+    std::cout << it[0] << " " << it[1] << std::endl;
+    ++it;
+  }
 }
 
 // show uniform number, first name and last name of each player that plays in the indicated state and wears the indicated uniform color
 void query4(connection * C, string team_state, string team_color) {
+  /* 
+  select player.uniform_num, player.first_name, player.last_name 
+  from player, team, state, color
+  where player.team_id = team.team_id and team.state_id = state.state_id 
+        and team.color_id = color.color_id and state.name = team_state 
+        and color.name = team_color;
+  */
+  nontransaction N(*C);
+  std::stringstream sql;
+  sql << "SELECT PLAYER.UNIFORM_NUM, PLAYER.FIRST_NAME, PLAYER.LAST_NAME FROM PLAYER, "
+         "TEAM, STATE, COLOR WHERE (PLAYER.TEAM_ID = TEAM.TEAM_ID) AND (TEAM.STATE_ID = "
+         "STATE.STATE_ID) AND (TEAM.COLOR_ID = COLOR.COLOR_ID) AND (STATE.NAME = '"
+      << team_state << "') AND (COLOR.NAME = '" << team_color << "');";
+  result r = N.exec(sql.str());
+  // print results
+  std::cout << "UNIFORM_NUM FIRST_NAME LAST_NAME" << std::endl;
+  result::const_iterator it = r.begin();
+  while (it != r.end()) {
+    std::cout << it[0] << " " << it[1] << " " << it[2] << std::endl;
+    ++it;
+  }
 }
 
 // show first name and last name of each player, and team name and number of wins for each team that has won more than the indicated number of games
 void query5(connection * C, int num_wins) {
+  /*
+  select player.first_name, player.last_name, team.name, team.wins
+  from player, team
+  where player.team_id = team.team_id and team.wins > num_wins;
+  */
+  nontransaction N(*C);
+  std::stringstream sql;
+  sql << "SELECT PLAYER.FIRST_NAME, PLAYER.LAST_NAME, TEAM.NAME, TEAM.WINS FROM PLAYER, "
+         "TEAM WHERE (PLAYER.TEAM_ID = TEAM.TEAM_ID) AND (TEAM.WINS > "
+      << num_wins << ");";
+  result r = N.exec(sql.str());
+  // print results
+  std::cout << "FIRST_NAME LAST_NAME NAME WINS" << std::endl;
+  result::const_iterator it = r.begin();
+  while (it != r.end()) {
+    std::cout << it[0] << " " << it[1] << " " << it[2] << " " << it[3] << std::endl;
+    ++it;
+  }
 }
