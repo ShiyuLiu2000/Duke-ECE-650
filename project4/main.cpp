@@ -83,6 +83,109 @@ void createTables(connection * C) {
   std::cout << "created tables" << std::endl;
 }
 
+// parse player.txt and load into database
+void parsePlayer(connection * C, std::istream & stream) {
+  std::string line;
+  while (std::getline(stream, line).good()) {
+    size_t pos = line.find(" ");
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int team_id = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int jersey_num = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    std::string first_name = line.substr(0, pos);
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    std::string last_name = line.substr(0, pos);
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int mpg = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int ppg = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int rpg = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int apg = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    double spg = std::stod(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    double bpg = std::stod(line);
+
+    add_player(
+        C, team_id, jersey_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg);
+  }
+  std::cout << "parsed player.txt" << std::endl;
+}
+
+// parse team.txt and load into database
+void parseTeam(connection * C, std::istream & stream) {
+  std::string line;
+  while (std::getline(stream, line).good()) {
+    size_t pos = line.find(" ");
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    std::string name = line.substr(0, pos);
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int state_id = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int color_id = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    pos = line.find(" ");
+    int wins = std::stoi(line.substr(0, pos));
+    line = line.substr(pos + 1);
+
+    int losses = std::stoi(line);
+
+    add_team(C, name, state_id, color_id, wins, losses);
+  }
+  std::cout << "parsed team.txt" << std::endl;
+}
+
+// parse state.txt and load into database
+void parseState(connection * C, std::istream & stream) {
+  std::string line;
+  while (std::getline(stream, line).good()) {
+    size_t pos = line.find(" ");
+    line = line.substr(pos + 1);
+    add_state(C, line);
+  }
+  std::cout << "parsed state.txt" << std::endl;
+}
+
+// parse color.txt and load into database
+void parseColor(connection * C, std::istream & stream) {
+  std::string line;
+  while (std::getline(stream, line).good()) {
+    size_t pos = line.find(" ");
+    line = line.substr(pos + 1);
+    add_color(C, line);
+  }
+  std::cout << "parsed color.txt" << std::endl;
+}
+
 int main(int argc, char * argv[]) {
   //Allocate & initialize a Postgres connection object
   connection * C;
@@ -109,6 +212,42 @@ int main(int argc, char * argv[]) {
 
   dropTables(C);
   createTables(C);
+
+  // parse and load state.txt
+  std::ifstream stateStream("state.txt");
+  if (!stateStream.good()) {
+    std::cerr << "Cannot open state.txt" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  parseState(C, stateStream);
+  stateStream.close();
+
+  // parse and load color.txt
+  std::ifstream colorStream("color.txt");
+  if (!colorStream.good()) {
+    std::cerr << "Cannot open color.txt" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  parseColor(C, colorStream);
+  colorStream.close();
+
+  // parse and load team.txt
+  std::ifstream teamStream("team.txt");
+  if (!teamStream.good()) {
+    std::cerr << "Cannot open team.txt" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  parseTeam(C, teamStream);
+  teamStream.close();
+
+  // parse and load player.txt
+  std::ifstream playerStream("player.txt");
+  if (!playerStream.good()) {
+    std::cerr << "Cannot open player.txt" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  parsePlayer(C, playerStream);
+  playerStream.close();
 
   exercise(C);
 
