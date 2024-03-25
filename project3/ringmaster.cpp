@@ -4,6 +4,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <vector>
@@ -44,9 +45,7 @@ class Ringmaster {
       std::cerr << "Cannot bind socket" << std::endl;
       exit(EXIT_FAILURE);
     }
-
     freeaddrinfo(res);
-
     if (listen(listen_fd, num_players) < 0) {
       std::cerr << "Cannot listen on socket" << std::endl;
       exit(EXIT_FAILURE);
@@ -71,7 +70,18 @@ class Ringmaster {
   }
 
   // send player their id, total number of players, and their left & right player id
-  void distributePlayerInfo();
+  void distributePlayerInfo() {
+    for (int i = 0; i < num_players; i++) {
+      int left_player_id = (i - 1 + num_players) % num_players;
+      int right_player_id = (i + 1) % num_players;
+      int info[4] = {i, num_players, left_player_id, right_player_id};
+      // send packet to players (but how to recv and set?)
+      int bytes_sent = send(players[i], info, sizeof(info), 0);
+      if (bytes_sent < 0) {
+        std::cerr << "Cannot send info to player " << i << std::endl;
+      }
+    }
+  }
 
   // send the potato to first random player
   void sendFirstPotato(Potato & potato) {
@@ -85,10 +95,8 @@ class Ringmaster {
   }
 
   void closeConnections() {
-    std::vector<int>::iterator it = players.begin();
-    while (it != players.end()) {
-      close(*it);
-      ++it;
+    for (int i = 0; i < num_players; i++) {
+      close(players[i]);
     }
     close(listen_fd);
   }
@@ -100,15 +108,66 @@ class Ringmaster {
   }
   void startGame() {
     acceptPlayers();
+    distributePlayerInfo();
     Potato potato(num_hops);
     sendFirstPotato(potato);
+
+    fd_set read_fds;
+    int max_fd = *max_element(players.begin(), players.end());
+
     while (potato.getHotStatus()) {
-      // game logic here concerning players to pass the potato around
-      if (potato.getHops() == 0) {
-        potato.coolPotato();
-        break;
+      FD_ZERO(&read_fds);
+      for (int player_fd : players) {
+        FD_SET(player_fd, &read_fds);
+      }
+      if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) < 0) {
+        std::cerr << "Cannot select" << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      // listen for potato from any player
+      for (int i = 0; i < num_players; i++) {
+        if (FD_ISSET(players[i], &read_fds)) {
+          Potato received;
+          int bytes_received = recv(players[i], &received, sizeof(received), 0);
+          if (bytes_received > 0) {
+            if (received.getHops() > 0) {
+              received.decrementHop();
+              int next_player;
+              if (rand() % 2 == 0) {
+                next_player = players[(i - 1 + num_players) % num_players];
+              }
+              else {
+                next_player = players[(i + 1) % num_players];
+              }
+              send(next_player, &received, sizeof(received), 0);
+            }
+            else {
+              bool game_end = true;
+              for (int i = 0; i < num_players; i++) {
+                send(players[i], &game_end, sizeof(game_end), 0);
+              }
+              received.coolPotato();
+              break;
+            }
+          }
+        }
       }
     }
     closeConnections();
   }
 };
+
+int main(int argc, char * argv[]) {
+  if (argc != 4) {
+    std::cerr << "Usage: " << argv[0] << " <port_num> <num_players> <num_hops>"
+              << std::endl;
+    return EXIT_FAILURE;
+  }
+  const char * port = argv[1];
+  int num_players = std::stoi(argv[2]);
+  int num_hops = std::stoi(argv[3]);
+
+  Ringmaster ringmaster(num_players, num_hops, port);
+  ringmaster.startGame();
+  return 0;
+}
